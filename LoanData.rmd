@@ -1,0 +1,463 @@
+Loan Data from Prosper by Gvantsa Mchedlidze
+========================================================
+
+
+Presented Loan Data from Prosper with last updated 03/11/2014. This data set contains 113,937 loans with 81 variables on each loan.
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+library(psych)
+library(dplyr)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+LoanData <-read.csv('prosperLoanData.csv')
+```
+```{r echo=FALSE}
+# Wahat is in the Data
+str(LoanData)
+
+```
+```{r echo=FALSE}
+# Data summary
+
+summary(LoanData)
+```
+
+# Univariate Plots Section
+
+The length of the loan expressed in months.\
+
+```{r echo=FALSE}
+
+summary(LoanData$Term)
+```
+
+The current status of the loan: Cancelled,  Chargedoff, Completed, Current, Defaulted, FinalPaymentInProgress,
+PastDue. The PastDue status will be accompanied by a delinquency bucket.\
+
+```{r echo=FALSE}
+
+summary(LoanData$LoanStatus)
+```
+
+The employment status of the borrower at the time they posted the listing.\
+
+```{r echo=FALSE}
+
+summary(LoanData$EmploymentStatus)
+```
+
+The origination amount of the loan.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data=LoanData, x=LoanOriginalAmount, binwidth =1000)
+
+summary(LoanData$LoanOriginalAmount)
+```
+
+> **Tip**: The most loans are below the 5000 but there are spikes  at 10000, 20000, 25000.\
+
+The Borrower's interest rate for this loan.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data=LoanData, x=BorrowerRate, binwidth =0.01)+
+      scale_x_continuous(limits = c(0, 0.4))
+
+summary(LoanData$BorrowerRate)
+```
+
+The Lender yield on the loan. Lender yield is equal to the interest rate on the loan less the servicing fee.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data=LoanData, x=LenderYield, binwidth =0.01)+
+  scale_x_continuous(limits = c(-0.01, 0.36))
+
+summary(LoanData$LenderYield)
+```
+
+> **Tip**: Interest rate on the loan almost always less than the servicing fee.\
+
+Effective yield is equal to the borrower interest rate (i) minus the servicing fee rate, (ii) minus estimated
+uncollected interest on charge-offs, (iii) plus estimated collected late fees.  Applicable for loans originated after
+July 2009.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data = subset(LoanData, !is.na(EstimatedEffectiveYield)), x=EstimatedEffectiveYield, binwidth =0.01)+
+  scale_x_continuous(limits = c(-0.05, 0.32))
+
+summary(LoanData$EstimatedEffectiveYield)
+```
+
+Estimated loss is the estimated principal loss on charge-offs. Applicable for loans originated after July 2009.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data = subset(LoanData, !is.na(EstimatedLoss)), x=EstimatedLoss, binwidth =0.01)+
+  scale_x_continuous(limits = c(0, 0.36))
+
+summary(LoanData$EstimatedLoss)
+```
+
+The estimated return assigned to the listing at the time it was created. Estimated return is the difference between
+the Estimated Effective Yield and the Estimated Loss Rate. Applicable for loans originated after July 2009.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data = subset(LoanData, !is.na(EstimatedReturn)), x=EstimatedReturn, binwidth =0.01)+
+  scale_x_continuous(limits = c(-0.05, 0.25))
+
+summary(LoanData$EstimatedReturn)
+```
+
+> **Tip**: Mean of estimated Return is 0.96 and for estimated loss is 0.80.\
+
+The income range of the borrower at the time the listing was created.\
+
+```{r echo=FALSE, warning=FALSE}
+
+LoanData$IncomeRange <- ordered(LoanData$IncomeRange, levels = c("Not employed", "$0", "$1-24,999", "$25,000-49,999","$50,000-74,999", "$75,000-99,999", "$100,000+","Not displayed"))
+
+qplot(data=LoanData, x=IncomeRange)
+
+```
+
+> **Tip**: Borrowers income range peaks 25000$ - 74999$ only few are not employed or with 0$ income .\
+
+The scheduled monthly loan payment.\
+
+```{r echo=FALSE, warning=FALSE}
+qplot(data=LoanData, x=MonthlyLoanPayment, binwidth =100)+
+  scale_x_continuous(limits = c(0, 1500))
+
+summary(LoanData$MonthlyLoanPayment)
+```
+
+> **Tip**: Monthly payment amount is manly lass than 500$ but the plot has long tail in positive direction.\
+
+The quarter in which the loan was originated.\
+
+```{r echo=FALSE, warning=FALSE}
+
+LoanData$year<-substring(LoanData$LoanOriginationQuarter,3,7)
+LoanData$Quarter<-substring(LoanData$LoanOriginationQuarter,0,2)
+
+qplot(data=LoanData, x=Quarter)
+
+summary(LoanData$Quarter)
+
+qplot(data=LoanData, x=Quarter)+facet_wrap(~LoanData$year)
+
+summary(LoanData$LoanOriginationQuarter)
+```
+The date the loan was originated.\
+
+```{r echo=FALSE, warning=FALSE}
+
+LoanData$year<-substring(LoanData$LoanOriginationDate,0,4)
+LoanData$Month<-substring(LoanData$LoanOriginationDate,6,7)
+
+qplot(data=LoanData, x=Month)
+
+summary(LoanData$Month)
+
+qplot(data=LoanData, x=Month)+facet_wrap(~LoanData$year)
+
+```
+
+> **Tip**: Totally in Q4 is highest number of loans but while looking by year there is different picture. 2013 was the most active year. May be for 2005 and 2014 there we don't have full information. The information is chacked using variable LoanOriginationDate.\
+
+Number of months since the loan originated.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(data=LoanData, x=LoanMonthsSinceOrigination, binwidth =1)
+
+summary(LoanData$LoanMonthsSinceOrigination)
+```
+> **Tip**: The plot peaks around 6 month, other peak is near 24 month there is a gap between 55 and 65 month and other peak is at 69 month.\
+
+Number of on time payments the borrower made on Prosper loans at the time they created this listing. This value will be null if the borrower had no prior loans.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(x = TotalProsperPaymentsBilled, data = subset(LoanData, !is.na(TotalProsperPaymentsBilled)), binwidth =1) +
+  scale_x_continuous(limits = c(0, 141))
+  
+summary(LoanData$TotalProsperPaymentsBilled)
+```
+
+Number of on time payments the borrower had made on Prosper loans at the time they created this listing. This value will be null if the borrower has no prior loans.\
+
+```{r echo=FALSE, warning=FALSE}
+
+qplot(x = OnTimeProsperPayments, data = subset(LoanData, !is.na(OnTimeProsperPayments)), binwidth =1) +
+  scale_x_continuous(limits = c(0, 141))
+  
+summary(LoanData$OnTimeProsperPayments)
+```
+
+> **Tip**: Total and ontime payments not differ much from each other.\
+
+# Univariate Analysis
+
+This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate\
+(or interest rate), current loan status, borrower income, borrower employment status and borrower credit history.\
+Income range, employment status and amount of credit relation are main interest.\
+Monthly payment amount and borrower's interest rate relaated variables.\
+I have created month, quarter, and year variables from date related variables.\
+I have orderd income range variables from low to high and didn't take into account NA values.\
+
+# Bivariate Plots Section
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plots}
+
+ggplot(aes(x = LoanOriginalAmount, y = MonthlyLoanPayment), 
+       data =subset(LoanData, !is.na(MonthlyLoanPayment)) )+
+  geom_point(alpha=0.1,position = position_jitter(h=0), color='red')+
+  geom_smooth(method = 'lm')
+
+cor.test(LoanData$LoanOriginalAmount, LoanData$MonthlyLoanPayment, method='pearson')
+```
+
+> **Tip**: As expected Monthly payment increases when load increases, they are highly correlated.\
+
+```{r echo=FALSE, warning=FALSE, Amountvsduration}
+?geom_smooth
+ggplot(aes(x = LoanOriginalAmount, y = LoanMonthsSinceOrigination), 
+       data =LoanData )+
+  geom_point(alpha=0.1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+cor.test(LoanData$LoanOriginalAmount, LoanData$LoanMonthsSinceOrigination, method='pearson')
+```
+
+
+```{r echo=FALSE, warning=FALSE, incomevsduration}
+
+ggplot(aes(x = StatedMonthlyIncome, y = LoanMonthsSinceOrigination),
+       data = subset(LoanData, StatedMonthlyIncome<100000) )+
+  geom_point(alpha=0.1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+with (subset(LoanData, StatedMonthlyIncome<50000), cor.test(StatedMonthlyIncome, LoanMonthsSinceOrigination, method='pearson'))
+```
+```{r echo=FALSE, warning=FALSE, amountvsincome}
+
+ggplot(aes(x = StatedMonthlyIncome, y = LoanOriginalAmount), 
+       data =subset(LoanData, StatedMonthlyIncome<100000) )+
+  geom_point(alpha=0.1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+with (subset(LoanData, StatedMonthlyIncome<50000), cor.test(StatedMonthlyIncome, LoanOriginalAmount, method='pearson'))
+```
+> **Tip**: Loan duration peaks for lower loan amount<2000 also low monthly incomes and strongly decreases until income reaches 10000. Duration also depending on amount. Loan amout increases with monthly income until income <28000. \
+
+```{r echo=FALSE, warning=FALSE, amountvsdelay}
+
+LoanData$ProsperPaymentsDelay = LoanData$ProsperPaymentsLessThanOneMonthLate+LoanData$ProsperPaymentsOneMonthPlusLate
+
+ggplot(aes(x = LoanOriginalAmount, y = ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_point(alpha=1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+with (subset(LoanData, ProsperPaymentsDelay> 0), cor.test(ProsperPaymentsDelay, LoanOriginalAmount, method='pearson'))
+```
+```{r echo=FALSE, warning=FALSE, incomevsdelay}
+
+ggplot(aes(x = StatedMonthlyIncome, y =ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_point(alpha=1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+with (subset(LoanData, ProsperPaymentsDelay> 0), cor.test(ProsperPaymentsDelay, StatedMonthlyIncome, method='pearson'))
+```
+
+> **Tip**: Loan delay is not depend loan amount. Delay is clustered for monthly income<20000.  \
+
+```{r echo=FALSE, warning=FALSE, amountvsEffectiveYield}
+
+ggplot(aes(x = LoanOriginalAmount, y = EstimatedEffectiveYield), 
+       data = subset(LoanData, !is.na(EstimatedEffectiveYield)))+
+  geom_point(alpha=1,position = position_jitter(h=0), color='red')+
+  geom_smooth()
+
+with (subset(LoanData, !is.na(EstimatedEffectiveYield)), cor.test(LoanOriginalAmount, EstimatedEffectiveYield, method='pearson'))
+```
+
+> **Tip**: EstimatedEffectiveYield and loan amount dependence is visible loans <10000.\
+
+```{r echo=FALSE, warning=FALSE, AmountbyEstloss }
+
+Estloss_groups <- group_by(subset(LoanData, !is.na(EstimatedLoss)), EstimatedLoss)
+
+Amount_by_loss <- summarise(Estloss_groups,
+                          Amount_means= mean(LoanOriginalAmount),
+                          Amount_count_median= median(LoanOriginalAmount),
+                          n=n())
+
+Amount_by_loss <- arrange(Amount_by_loss, EstimatedLoss)
+
+ggplot(aes(x = EstimatedLoss, y = Amount_means), data = Amount_by_loss) +
+  geom_line(alpha=1, position = position_jitter(h=0) )#+
+```
+
+```{r echo=FALSE, warning=FALSE, AmountbyEstreturn }
+
+EstRet_groups <- group_by(subset(LoanData, !is.na(EstimatedReturn)), EstimatedReturn)
+
+Amount_by_Ret <- summarise(EstRet_groups,
+                          Amount_means= mean(LoanOriginalAmount),
+                          Amount_count_median= median(LoanOriginalAmount),
+                          n=n())
+
+Amount_by_Ret <- arrange(Amount_by_Ret, EstimatedReturn)
+
+ggplot(aes(x = EstimatedReturn, y = Amount_means), data = Amount_by_Ret) +
+  geom_point(alpha=1, position = position_jitter(h=0) )#+
+   
+```
+
+> **Tip**: Loan Amount mean is more depend on EstimatedLoss than EstimatedReturn. Manly loss<0,1 is preferable for high amount of loans. Return manly vaies from 0 to 0.2\
+
+
+# Bivariate Analysis
+
+Amount of monly payment increasies proportionally as Loan amount increasies.\
+Loan duration decreasies with monthly income increases until it reaches 10000 than dependence dissapiars. \
+High loan amounts have estimated loss less than 0.1.\
+The most delay of payments is observed for incomes less than 10000.\
+LoanOriginalAmount vs MonthlyLoanPayment and OnTimeProsperPayments vs TotalProsperPayments have strongest dependence.\
+
+# Multivariate Plots Section
+
+
+```{r echo=FALSE, delayvsincomerangevsyear}
+
+ggplot(aes(x = StatedMonthlyIncome, y =LoanOriginalAmount), 
+       data = subset(LoanData, StatedMonthlyIncome<20000) )+
+  geom_point(aes(color = year), stat = 'summary',  fun.y = mean)
+```
+
+```{r echo=FALSE, delayvsincomerangevsyearfracmonth}
+
+ggplot(aes(x = StatedMonthlyIncome, y =LoanOriginalAmount), 
+       data = subset(LoanData, StatedMonthlyIncome<20000) )+
+  geom_point(aes(color = year), stat = 'summary',  fun.y = mean)+
+  facet_wrap(~Month)
+```
+
+> **Tip**: Loan amount increases  in 2013 and 2014 with monthly income >8000. Clearly seen that this began in april\ 2013 and lasts in first quarter of 2014. We have only first quarter information of 2014.\
+
+```{r echo=FALSE, incomevsdelayvsemplstatus}
+
+ggplot(aes(x = IncomeRange,y =ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_point(aes(color = EmploymentStatus), stat = 'summary',  fun.y = mean)+
+  scale_color_brewer(type = 'qual')
+```
+```{r echo=FALSE, Delayvsdurationvsmonth}
+
+ggplot(aes(x = LoanMonthsSinceOrigination,y =ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_line(aes(color = Month), stat = 'summary',  fun.y = mean)
+```
+
+```{r echo=FALSE, delayvslengthvsempstatsus}
+
+ggplot(aes(x = LoanMonthsSinceOrigination,y =ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_line(aes(color = EmploymentStatus), stat = 'summary',  fun.y = mean)+
+  scale_color_brewer(type = 'qual')
+```
+```{r echo=FALSE, delayvslengthvsyear}
+
+ggplot(aes( x = LoanMonthsSinceOrigination, y =ProsperPaymentsDelay), 
+       data = subset(LoanData, ProsperPaymentsDelay> 0) )+
+  geom_line(aes(color = year), stat = 'summary',  fun.y = mean)+
+  scale_color_brewer(type = 'qual')
+```
+> **Tip**: High rate of delays are observed in July 2007 with loan origination greater than 50 with employment status other and income range $2500-49999.\
+
+
+# Multivariate Analysis
+
+High rate of delays are observed in July 2007 with loan origination grater than 50 with employment status other and income range $2500-49999.\
+Loan amount increasies in 2013 and 2014 with monthly income >8000. Clearely seen that this begin in april\ 2013 and lasts in first quarter of 2014. We have only first quarter information of 2014.\
+
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+qplot(data=LoanData, x=LoanOriginalAmount, binwidth =1000)
+
+```
+
+### Description One
+Distribution of loan original amount.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+Estloss_groups <- group_by(subset(LoanData, !is.na(EstimatedLoss)), EstimatedLoss)
+
+Amount_by_loss <- summarise(Estloss_groups,
+                          Amount_means= mean(LoanOriginalAmount),
+                          Amount_count_median= median(LoanOriginalAmount),
+                          n=n())
+
+Amount_by_loss <- arrange(Amount_by_loss, EstimatedLoss)
+
+ggplot(aes(x = EstimatedLoss, y = Amount_means), data = Amount_by_loss) +
+  geom_line(alpha=1, position = position_jitter(h=0) )
+```
+
+### Description Two
+The means of loan amount vs estimated loss
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+ggplot(aes(x = StatedMonthlyIncome, y =LoanOriginalAmount), 
+       data = subset(LoanData, StatedMonthlyIncome<20000) )+
+  geom_point(aes(color = year), stat = 'summary',  fun.y = mean)+
+  facet_wrap(~Month)
+```
+
+### Description Three
+Monthly income vs loan original amount in years and month.\
+------
+
+# Reflection
+This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate\
+(or interest rate), current loan status, borrower income, borrower employment status and borrower credit history.\
+Analysed income range, employment status and amount of credit relation are main interest. Also delay of paiment,
+monthly payment amount and borrower's interest rate relaated variables. Manly dependences between variables are observed for loans less than 10000$.\
+
+Loan amount increasies in 2013 and 2014 with monthly income >8000. Clearely seen that this begin in april\ 2013 and lasts in first quarter of 2014. We have only first quarter information of 2014.\
+Loan Amount mean is more depend on EstimatedLoss than EstimatedReturn. Manly loss<0,1 is preferable for high amount of loans. Return manly vaies from 0 to 0.2.\
+High rate of delays are observed in July 2007 with loan origination grater than 50 with employment status other and income range $2500-49999.\
+
+
