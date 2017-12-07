@@ -172,7 +172,8 @@ LoanData$IncomeRange <- ordered(LoanData$IncomeRange,
 
 qplot(data = LoanData, x = IncomeRange,
       main = 'The income range of the borrower',
-      xlab = 'Income Range ($)')
+      xlab = 'Income Range ($)') +
+  coord_flip()
 
 ```
 
@@ -466,7 +467,9 @@ ggplot(aes(x = StatedMonthlyIncome, y = LoanOriginalAmount),
   labs(title = "Stated Monthly Income vs Loan Original Amount by year") +
   labs(x = "Stated Monthly Income($)") +
   labs(y = "Loan Original Amount($)") +
-  geom_point(aes(color = year), stat = 'summary',  fun.y = mean)
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_point(aes(color = year), stat = 'summary',  fun.y = mean) +
+  facet_wrap(~year)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, delayvsincomerangevsyearfracmonth}
@@ -505,9 +508,9 @@ ggplot(aes(x = IncomeRange, y = ProsperPaymentsDelay),
 
 ggplot(aes(x = LoanMonthsSinceOrigination,y = ProsperPaymentsDelay), 
        data = subset(LoanData, ProsperPaymentsDelay > 0) ) +
-  labs(title = "Loan Months Since Origination vs Prosper Payments Delay by Month") +
+  labs(title = "Loan Months Since Origination vs Prosper Payments Delay mean by Month") +
   labs(x = "Loan Months Since Origination") +
-  labs(y = "Prosper Payments") +
+  labs(y = "Mean of Prosper Payments") +
   geom_line(aes(color = Month), stat = 'summary',  fun.y = mean)
 ```
 
